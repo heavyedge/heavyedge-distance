@@ -58,7 +58,7 @@ jobs:
 
       - name: install package
         run: |
-          pip install .[test]
+          pip install -e .[test]
 
       - run: pytest
 
