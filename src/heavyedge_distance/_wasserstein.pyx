@@ -8,46 +8,40 @@ import numpy as np
 
 cnp.import_array()
 
-cdef void _interp(
-        double[:] x,
-        double[:] xp,
-        double[:] fp,
-        double[:] out,
-        long last_idx,
-    ):
-    cdef Py_ssize_t i, j, n = xp.shape[0], nx = x.shape[0]
-    cdef double xval, x0, x1, f0, f1, slope
-
-    for i in range(nx):
-        xval = x[i]
-        if xval < xp[0]:
-            out[i] = fp[0]
-        elif xval > xp[n-1]:
-            out[i] = fp[last_idx]
-            continue
-        else:
-            # TODO: use binary search here for speedup
-            j = 0
-            while j < n - 1 and xp[j+1] < xval:
-                j += 1
-
-        x0 = xp[j]
-        x1 = xp[j+1]
-        f0 = fp[j]
-        f1 = fp[j+1]
-        slope = (f1 - f0) / (x1 - x0)
-        out[i] = f0 + slope * (xval - x0)
-
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef cnp.ndarray[cnp.float64_t, ndim=2] _quantile(double[:] t, double[:, :] Gs, double[:] x, long[:] last_idxs):
-    cdef Py_ssize_t i, N = Gs.shape[0], L = t.shape[0]
-    cdef double right
-    cdef cnp.ndarray[cnp.float64_t, ndim=2] ret = np.empty((N, L), dtype=np.float64)
+cpdef cnp.ndarray[cnp.float64_t, ndim=2] _quantile(double[:] x, double[:, :] Gs, long[:] Ls, double[:] t):
+    cdef Py_ssize_t i, L, N = Gs.shape[0], M2 = t.shape[0]
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] ret = np.empty((N, M2), dtype=np.float64)
     for i in range(N):
-        _interp(t, Gs[i, :], x, ret[i, :], last_idxs[i])
+        L = Ls[i]
+        _quantile_interp(t, Gs[i, :L], x[:L], ret[i, :])
     return ret
+
+
+cdef void _quantile_interp(double[:] t, double[:] G, double[:] x, double[:] out):
+    cdef Py_ssize_t i = 0, j = 0  # indices apply as: t[i], out[i], G[j], x[j]
+    cdef Py_ssize_t ii  # variable for emergency loop
+    cdef Py_ssize_t M2 = t.shape[0], L = G.shape[0]  # i: [0, M2), j: [0, L)
+    cdef double tval, G0, G1, x0, x1
+
+    out[i] = x[j]  # i = j = 0 here
+    for i in range(1, M2):
+        tval = t[i]
+        while j < L - 2 and G[j + 1] < tval:
+            j += 1
+
+            G0 = G[j]
+            G1 = G[j + 1]
+            x0 = x[j]
+            x1 = x[j + 1]
+
+        if tval < G[j + 1]:
+            out[i] = x0 + (x1 - x0) / (G1 - G0) * (tval - G0)
+        else:
+            # G[-1] < 0 for numerical reason.
+            out[i] = x1
 
 
 @cython.boundscheck(False)
