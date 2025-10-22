@@ -26,12 +26,10 @@ def scale_area(x, Ys):
     Examples
     --------
     >>> from heavyedge import get_sample_path, ProfileData
-    >>> from heavyedge.api import fill_after
     >>> from heavyedge_distance.api import scale_area
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     x = data.x()
     ...     Ys, Ls, _ = data[:]
-    ...     fill_after(Ys, Ls, 0)
     >>> Ys_scale = scale_area(x, Ys)
     >>> import matplotlib.pyplot as plt  # doctest: +SKIP
     ... plt.plot(x, Ys.T, color="gray", alpha=0.5)
@@ -56,12 +54,10 @@ def scale_plateau(Ys):
     Examples
     --------
     >>> from heavyedge import get_sample_path, ProfileData
-    >>> from heavyedge.api import fill_after
     >>> from heavyedge_distance.api import scale_plateau
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     x = data.x()
     ...     Ys, Ls, _ = data[:]
-    ...     fill_after(Ys, Ls, 0)
     >>> Ys_scale = scale_plateau(Ys)
     >>> import matplotlib.pyplot as plt  # doctest: +SKIP
     ... plt.plot(x, Ys.T, color="gray", alpha=0.5)

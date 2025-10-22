@@ -7,7 +7,6 @@ Wasserstein-related functions.
 
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
-from scipy.interpolate import interp1d
 
 from ._wasserstein import optimize_q
 
@@ -19,37 +18,74 @@ __all__ = [
 
 
 def quantile(x, f, t):
-    """Convert a probability distribution to a quantile function.
+    """Convert probability distributions to quantile functions.
 
     Parameters
     ----------
-    x : ndarray
-        Points over which *f* is measured.
-    f : ndarray
-        The empirical probability density function.
-    t : ndarray
+    x : (M,) ndarray
+        Coordinates of grids over which *fs* are measured.
+    fs : (N, M) ndarray
+        Empirical probability density functions.
+    t : (L,) ndarray
         Points over which the quantile function will be measured.
         Must be strictly increasing from 0 to 1.
 
     Returns
     -------
-    ndarray
-        Quantile function of *f* over *t*.
+    (N, L) ndarray
+        Quantile functions* over *t*.
 
     Examples
     --------
     >>> import numpy as np
     >>> from heavyedge import get_sample_path, ProfileData
+    >>> from heavyedge_distance.api import scale_area
     >>> from heavyedge_distance.wasserstein import quantile
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
-    ...     Y = next(data.profiles())
-    ...     x = data.x()[:len(Y)]
-    >>> f = Y / np.trapezoid(Y, x)
+    ...     x = data.x()
+    ...     Ys, _, _ = data[:]
+    ...     fs = scale_area(x, Ys)
     >>> t = np.linspace(0, 1, 100)
-    >>> Q = quantile(x[:len(f)], f, t)
+    >>> Qs = quantile(x, fs, t)
     """
-    G = cumulative_trapezoid(f, x, initial=0)
-    return interp1d(G, x, bounds_error=False, fill_value=(x[0], x[-1]))(t)
+    Gs = cumulative_trapezoid(f, x, initial=0, axis=-1)
+    return _batch_interp(t, x, Gs, left=x[0], right=x[-1])
+
+
+def _batch_interp(x, xp, fps, left, right):
+    # np.interp for multiple arrays in vectorized way.
+    N, M = fps.shape
+    (L,) = x.shape
+
+    # Find indices for interpolation positions
+    idx = np.searchsorted(xp, x, side="left")
+    idx = np.clip(idx, 1, M - 1)
+
+    # Get xp and fp at neighboring indices
+    x0 = xp[idx - 1]  # (L,)
+    x1 = xp[idx]  # (L,)
+    denom = x1 - x0
+
+    # Interpolation weights (broadcasted over N)
+    w = (x - x0) / denom  # (L,)
+    w = w[None, :]  # shape (1, L) for broadcasting
+
+    # Gather y0, y1 for all N at once
+    y0 = fps[:, idx - 1]  # (N, L)
+    y1 = fps[:, idx]  # (N, L)
+
+    # Linear interpolation
+    y = y0 + w * (y1 - y0)  # (N, L)
+
+    # Handle out-of-bounds (like np.interp)
+    left = np.full((N, 1), left)
+    right = np.full((N, 1), right)
+
+    # Apply left/right behavior
+    y = np.where(x[None, :] < xp[0], left, y)
+    y = np.where(x[None, :] > xp[-1], right, y)
+
+    return y
 
 
 def wdist(x1, f1, x2, f2, grid_num):
@@ -89,8 +125,8 @@ def wdist(x1, f1, x2, f2, grid_num):
     >>> d = wdist(x1, f1, x2, f2, 100)
     """
     grid = np.linspace(0, 1, grid_num)
-    Q1 = quantile(x1, f1, grid)
-    Q2 = quantile(x2, f2, grid)
+    Q1 = quantile(x1, f1.reshape(1, -1), grid)[0]
+    Q2 = quantile(x2, f2.reshape(1, -1), grid)[0]
     return np.trapezoid((Q1 - Q2) ** 2, grid) ** 0.5
 
 
@@ -129,7 +165,7 @@ def wmean(xs, fs, grid_num):
     ... plt.plot(x, f)
     """
     grid = np.linspace(0, 1, grid_num)
-    Q = np.array([quantile(x, f, grid) for x, f in zip(xs, fs)])
+    Q = np.array([quantile(x, f.reshape(1, -1), grid)[0] for x, f in zip(xs, fs)])
     g = np.mean(Q, axis=0)
     if np.all(np.diff(g) >= 0):
         q = g
