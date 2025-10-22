@@ -7,6 +7,10 @@ extensions = [
         "heavyedge_distance._wasserstein",
         ["src/heavyedge_distance/_wasserstein.pyx"],
     ),
+    Extension(
+        "heavyedge_distance._dfd",
+        ["src/heavyedge_distance/_dfd.pyx"],
+    ),
 ]
 
 setup(

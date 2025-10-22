@@ -8,7 +8,7 @@ Wasserstein-related functions.
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 
-from ._wasserstein import _quantile, _wdist, optimize_q
+from ._wasserstein import _optimize_q, _quantile, _wdist
 
 __all__ = [
     "quantile",
@@ -76,7 +76,7 @@ def wdist(x, fs, Ls, grid_num):
 
     Returns
     -------
-    (N, N)
+    (N, N) array
         Wasserstein distance matrix.
 
     Examples
@@ -134,7 +134,7 @@ def wmean(x, fs, Ls, grid_num):
     if np.all(np.diff(g) >= 0):
         q = g
     else:
-        q = optimize_q(g)
+        q = _optimize_q(g)
     pdf = 1 / np.gradient(q, grid)
     pdf[-1] = 0
     pdf /= np.trapezoid(pdf, q)

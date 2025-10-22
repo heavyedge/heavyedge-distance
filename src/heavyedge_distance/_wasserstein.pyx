@@ -46,7 +46,7 @@ cdef void _quantile_interp(double[:] t, double[:] G, double[:] x, double[:] out)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef cnp.ndarray[cnp.float64_t, ndim=1] optimize_q(double[:] g):
+cpdef cnp.ndarray[cnp.float64_t, ndim=1] _optimize_q(double[:] g):
     # M = number of probability-space grid, N = number of distance-space grid
     cdef Py_ssize_t i, j, idx
     cdef double[:] y_vals = np.unique(g)
