@@ -5,7 +5,7 @@
 cimport cython
 cimport numpy as cnp
 from cython.parallel cimport prange
-from libc.math cimport NAN, fabs, fmax, fmin
+from libc.math cimport NAN, fabs, fmax, fmin, sqrt
 from libc.stdlib cimport free, malloc
 
 import numpy as np
@@ -61,8 +61,46 @@ cpdef cnp.ndarray[cnp.float64_t, ndim=2] _dfd_1d_distmat(double[:, :] Ys1, cnp.i
 
             D[i, j] = _dfd_1d(Ys1[i, :Ls1[i]], Ys2[j, :Ls2[j]])
     else:
+        # Avoid parallization overhead if single thread is used.
         for i in range(N1):
             for j in range(N2):
                 D[i, j] = _dfd_1d(Ys1[i, :Ls1[i]], Ys2[j, :Ls2[j]])
 
+    return D
+
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef cnp.ndarray[cnp.float64_t, ndim=2] _dfd_1d_distmat_self(double[:, :] Ys, cnp.int32_t[:] Ls, int n_threads):
+    """1-D DFD matrix of a profile vector to itself."""
+    cdef Py_ssize_t N = Ys.shape[0]
+    cdef Py_ssize_t total = N * (N - 1) // 2  # number of unique pairs
+    cdef Py_ssize_t k, i, j
+    cdef double xi, xj, dist
+
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] D = np.empty((N, N), dtype=np.float64)
+
+    # Diagonal = 0
+    for i in range(N):
+        D[i, i] = 0.0
+
+    if n_threads > 2:
+        # Parallelized flat loop across unique pairs (i, j)
+        for k in prange(total, nogil=True, num_threads=n_threads, schedule='static'):
+            # Recover (i, j) from flat upper-triangle index k
+            # Using triangular number inversion
+            i = <Py_ssize_t>((2 * N - 1 - sqrt((2 * N - 1)**2 - 8 * k)) / 2)
+            j = k - i * (2 * N - i - 1) // 2 + i + 1
+
+            dist = _dfd_1d(Ys[i, :Ls[i]], Ys[j, :Ls[j]])
+            D[i, j] = dist
+            D[j, i] = dist
+    else:
+        # Avoid parallization overhead if single thread is used.
+        for i in range(N):
+            for j in range(i, N):
+                dist = _dfd_1d(Ys[i, :Ls[i]], Ys[j, :Ls[j]])
+                D[i, j] = dist
+                D[j, i] = dist
     return D
