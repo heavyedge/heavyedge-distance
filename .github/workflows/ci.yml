@@ -51,21 +51,17 @@ jobs:
       - name: get repo
         uses: actions/checkout@v3
 
-      - name: Install OpenMP on macOS
+      - name: Configure macOS
         if: runner.os == 'macOS'
         run: |
           brew install libomp
-          echo "CC=/usr/local/opt/llvm/bin/clang" >> $GITHUB_ENV
-          echo "CXX=/usr/local/opt/llvm/bin/clang++" >> $GITHUB_ENV
-          echo "CFLAGS=-I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp" >> $GITHUB_ENV
-          echo "CXXFLAGS=-I/opt/homebrew/opt/libomp/include -Xpreprocessor -fopenmp" >> $GITHUB_ENV
-          echo "LDFLAGS=-L/opt/homebrew/opt/libomp/lib -lomp" >> $GITHUB_ENV
-
-      - name: Install LLVM on macOS
-        if: runner.os == 'macOS'
-        run: |
           brew install llvm
-          echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+          echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
+          echo "CXX=$(brew --prefix llvm)/bin/clang++" >> $GITHUB_ENV
+          echo "CFLAGS=-I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp" >> $GITHUB_ENV
+          echo "CXXFLAGS=-I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp" >> $GITHUB_ENV
+          echo "LDFLAGS=-L$(brew --prefix libomp)/lib -lomp" >> $GITHUB_ENV
+          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
 
       - name: set up Python
         uses: actions/setup-python@v4
