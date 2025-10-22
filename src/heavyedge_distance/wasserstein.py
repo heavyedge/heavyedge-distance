@@ -51,7 +51,7 @@ def quantile(x, fs, Ls, t):
     >>> Qs = quantile(x, fs, Ls, t)
     """
     Gs = cumulative_trapezoid(fs, x, initial=0, axis=-1)
-    return _quantile(x, Gs, Ls, t)
+    return _quantile(x, Gs, Ls.astype(np.int32), t)
 
 
 def wdist(x, fs, Ls, grid_num):
