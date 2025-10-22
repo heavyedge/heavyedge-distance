@@ -8,7 +8,7 @@ Wasserstein-related functions.
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 
-from ._wasserstein import _wdist, optimize_q
+from ._wasserstein import _quantile, _wdist, optimize_q
 
 __all__ = [
     "quantile",
@@ -17,22 +17,24 @@ __all__ = [
 ]
 
 
-def quantile(x, fs, t):
+def quantile(x, fs, Ls, t):
     """Convert probability distributions to quantile functions.
 
     Parameters
     ----------
-    x : (M,) ndarray
+    x : (M1,) ndarray
         Coordinates of grids over which *fs* are measured.
-    fs : (N, M) ndarray
+    fs : (N, M1) ndarray
         Empirical probability density functions.
-    t : (L,) ndarray
+    Ls : (N,) ndarray
+        Length of supports of each *fs*.
+    t : (M2,) ndarray
         Points over which the quantile function will be measured.
         Must be strictly increasing from 0 to 1.
 
     Returns
     -------
-    (N, L) ndarray
+    (N, M2) ndarray
         Quantile functions* over *t*.
 
     Examples
@@ -43,52 +45,17 @@ def quantile(x, fs, t):
     >>> from heavyedge_distance.wasserstein import quantile
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     x = data.x()
-    ...     Ys, _, _ = data[:]
+    ...     Ys, Ls, _ = data[:]
     ...     fs = scale_area(x, Ys)
     >>> t = np.linspace(0, 1, 100)
-    >>> Qs = quantile(x, fs, t)
+    >>> Qs = quantile(x, fs, Ls, t)
     """
     Gs = cumulative_trapezoid(fs, x, initial=0, axis=-1)
-    return _batch_interp(t, x, Gs, left=x[0], right=x[-1])
+    last_idxs = Ls - 1
+    return _quantile(t, Gs, x, last_idxs)
 
 
-def _batch_interp(x, xp, fps, left, right):
-    # np.interp for multiple arrays in vectorized way.
-    N, M = fps.shape
-    (L,) = x.shape
-
-    # Find indices for interpolation positions
-    idx = np.searchsorted(xp, x, side="left")
-    idx = np.clip(idx, 1, M - 1)
-
-    # Get xp and fp at neighboring indices
-    x0 = xp[idx - 1]  # (L,)
-    x1 = xp[idx]  # (L,)
-    denom = x1 - x0
-
-    # Interpolation weights (broadcasted over N)
-    w = (x - x0) / denom  # (L,)
-    w = w[None, :]  # shape (1, L) for broadcasting
-
-    # Gather y0, y1 for all N at once
-    y0 = fps[:, idx - 1]  # (N, L)
-    y1 = fps[:, idx]  # (N, L)
-
-    # Linear interpolation
-    y = y0 + w * (y1 - y0)  # (N, L)
-
-    # Handle out-of-bounds (like np.interp)
-    left = np.full((N, 1), left)
-    right = np.full((N, 1), right)
-
-    # Apply left/right behavior
-    y = np.where(x[None, :] < xp[0], left, y)
-    y = np.where(x[None, :] > xp[-1], right, y)
-
-    return y
-
-
-def wdist(x, fs, grid_num):
+def wdist(x, fs, Ls, grid_num):
     r"""Wasserstein distance matrix of 1D probability distributions.
 
     .. math::
@@ -103,6 +70,8 @@ def wdist(x, fs, grid_num):
         Coordinates of grids over which *fs* are measured.
     fs : (N, M) ndarray
         Empirical probability density functions.
+    Ls : (N,) ndarray
+        Length of supports of each *fs*.
     grid_num : int
         Number of sample points in [0, 1] to approximate the integral.
 
@@ -118,52 +87,51 @@ def wdist(x, fs, grid_num):
     >>> from heavyedge_distance.wasserstein import wdist
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     x = data.x()
-    ...     Ys, _, _ = data[:]
+    ...     Ys, Ls, _ = data[:]
     ...     fs = scale_area(x, Ys)
-    >>> d = wdist(x, fs, 100)
+    >>> d = wdist(x, fs, Ls, 100)
     """
     grid = np.linspace(0, 1, grid_num)
-    Qs = quantile(x, fs, grid)
+    Qs = quantile(x, fs, Ls, grid)
     return _wdist(grid, Qs)
 
 
-def wmean(xs, fs, grid_num):
+def wmean(x, fs, Ls, grid_num):
     """Fréchet mean of probability distrubutions using Wasserstein metric.
 
     Parameters
     ----------
-    xs : list of ndarray
-        Points over which each distribution in *fs* is measured.
-    fs : list of ndarray
+    x : (M,) ndarray
+        Coordinates of grids over which *fs* are measured.
+    fs : (N, M) ndarray
         Empirical probability density functions.
+    Ls : (N,) ndarray
+        Length of supports of each *fs*.
     grid_num : int
         Number of sample points in [0, 1] to approximate the integral.
 
     Returns
     -------
-    x, f : ndarray
-        Probability density function.
+    f_mean : ndarray
+        Fréchet mean of *fs* over *x*.
 
     Examples
     --------
-    >>> import numpy as np
     >>> from heavyedge import get_sample_path, ProfileData
+    >>> from heavyedge_distance.api import scale_area
     >>> from heavyedge_distance.wasserstein import wmean
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     x = data.x()
-    ...     (Y1, Y2), (L1, L2), _ = data[:2]
-    >>> x1, Y1 = x[:L1], Y1[:L1]
-    >>> x2, Y2 = x[:L2] + 3, Y2[:L2]
-    >>> f1, f2 = Y1 / np.trapezoid(Y1, x1), Y2 / np.trapezoid(Y2, x2)
-    >>> x, f = wmean([x1, x2], [f1, f2], 100)
+    ...     Ys, Ls, _ = data[:]
+    ...     fs = scale_area(x, Ys)
+    >>> f_mean = wmean(x, fs, Ls, 100)
     >>> import matplotlib.pyplot as plt  # doctest: +SKIP
-    ... plt.plot(x1, f1, "--", color="gray")
-    ... plt.plot(x2, f2, "--", color="gray")
-    ... plt.plot(x, f)
+    ... plt.plot(x, fs.T, "--", color="gray")
+    ... plt.plot(x, f_mean)
     """
     grid = np.linspace(0, 1, grid_num)
-    Q = np.array([quantile(x, f.reshape(1, -1), grid)[0] for x, f in zip(xs, fs)])
-    g = np.mean(Q, axis=0)
+    Qs = quantile(x, fs, Ls, grid)
+    g = np.mean(Qs, axis=0)
     if np.all(np.diff(g) >= 0):
         q = g
     else:
@@ -171,4 +139,4 @@ def wmean(xs, fs, grid_num):
     pdf = 1 / np.gradient(q, grid)
     pdf[-1] = 0
     pdf /= np.trapezoid(pdf, q)
-    return q, pdf
+    return np.interp(x, q, pdf, left=pdf[0], right=pdf[-1])

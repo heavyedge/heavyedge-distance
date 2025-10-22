@@ -8,6 +8,48 @@ import numpy as np
 
 cnp.import_array()
 
+cdef void _interp(
+        double[:] x,
+        double[:] xp,
+        double[:] fp,
+        double[:] out,
+        long last_idx,
+    ):
+    cdef Py_ssize_t i, j, n = xp.shape[0], nx = x.shape[0]
+    cdef double xval, x0, x1, f0, f1, slope
+
+    for i in range(nx):
+        xval = x[i]
+        if xval < xp[0]:
+            out[i] = fp[0]
+        elif xval > xp[n-1]:
+            out[i] = fp[last_idx]
+            continue
+        else:
+            # TODO: use binary search here for speedup
+            j = 0
+            while j < n - 1 and xp[j+1] < xval:
+                j += 1
+
+        x0 = xp[j]
+        x1 = xp[j+1]
+        f0 = fp[j]
+        f1 = fp[j+1]
+        slope = (f1 - f0) / (x1 - x0)
+        out[i] = f0 + slope * (xval - x0)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef cnp.ndarray[cnp.float64_t, ndim=2] _quantile(double[:] t, double[:, :] Gs, double[:] x, long[:] last_idxs):
+    cdef Py_ssize_t i, N = Gs.shape[0], L = t.shape[0]
+    cdef double right
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] ret = np.empty((N, L), dtype=np.float64)
+    for i in range(N):
+        _interp(t, Gs[i, :], x, ret[i, :], last_idxs[i])
+    return ret
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef cnp.ndarray[cnp.float64_t, ndim=1] optimize_q(double[:] g):
