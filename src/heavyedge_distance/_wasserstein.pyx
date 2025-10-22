@@ -11,7 +11,7 @@ cnp.import_array()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef cnp.ndarray[cnp.float64_t, ndim=2] _quantile(double[:] x, double[:, :] Gs, long[:] Ls, double[:] t):
+cpdef cnp.ndarray[cnp.float64_t, ndim=2] _quantile(double[:] x, double[:, :] Gs, cnp.int32_t[:] Ls, double[:] t):
     cdef Py_ssize_t i, L, N = Gs.shape[0], M2 = t.shape[0]
     cdef cnp.ndarray[cnp.float64_t, ndim=2] ret = np.empty((N, M2), dtype=np.float64)
     for i in range(N):
