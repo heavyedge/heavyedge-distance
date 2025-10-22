@@ -31,6 +31,9 @@ def scale_area(x, Ys):
     ...     x = data.x()
     ...     Ys, Ls, _ = data[:]
     ...     fill_after(Ys, Ls, 0)
-    >>> Ys = scale_area(x, Ys)
+    >>> Ys_scale = scale_area(x, Ys)
+    >>> import matplotlib.pyplot as plt  # doctest: +SKIP
+    ... plt.plot(x, Ys.T, color="gray", alpha=0.5)
+    ... plt.plot(x, Ys_scale.T)
     """
     return Ys / np.trapezoid(Ys, x, axis=1)[:, np.newaxis]
