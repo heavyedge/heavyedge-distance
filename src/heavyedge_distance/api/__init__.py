@@ -2,6 +2,7 @@
 
 __all__ = [
     "scale_area",
+    "scale_plateau",
 ]
 
-from .preshape import scale_area
+from .preshape import scale_area, scale_plateau
