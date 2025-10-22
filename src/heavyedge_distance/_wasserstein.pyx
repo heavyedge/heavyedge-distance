@@ -57,3 +57,27 @@ cpdef cnp.ndarray[cnp.float64_t, ndim=1] optimize_q(double[:] g):
 
     free(predecessor)
     return q
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cpdef cnp.ndarray[cnp.float64_t, ndim=2] _wdist(double[:] x, double[:, :] Qs):
+    cdef Py_ssize_t N = Qs.shape[0], M = Qs.shape[1]
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] ret = np.empty((N, N), dtype=np.float64)
+    cdef Py_ssize_t i, j, k
+    cdef double dist, dx
+
+    # Main loops
+    for i in range(N):
+        ret[i, i] = 0.0
+        for j in range(i + 1, N):
+            dist = 0.0
+            # Trapezoidal integration
+            for k in range(M - 1):
+                dx = x[k + 1] - x[k]
+                dist += 0.5 * dx * ((Qs[i, k] - Qs[j, k]) ** 2 + (Qs[i, k + 1] - Qs[j, k + 1]) ** 2)
+            dist = dist ** 0.5
+            ret[i, j] = dist
+            ret[j, i] = dist
+
+    return ret

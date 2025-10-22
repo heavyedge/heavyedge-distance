@@ -8,7 +8,7 @@ Wasserstein-related functions.
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 
-from ._wasserstein import optimize_q
+from ._wasserstein import _wdist, optimize_q
 
 __all__ = [
     "quantile",
@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-def quantile(x, f, t):
+def quantile(x, fs, t):
     """Convert probability distributions to quantile functions.
 
     Parameters
@@ -48,7 +48,7 @@ def quantile(x, f, t):
     >>> t = np.linspace(0, 1, 100)
     >>> Qs = quantile(x, fs, t)
     """
-    Gs = cumulative_trapezoid(f, x, initial=0, axis=-1)
+    Gs = cumulative_trapezoid(fs, x, initial=0, axis=-1)
     return _batch_interp(t, x, Gs, left=x[0], right=x[-1])
 
 
@@ -88,8 +88,8 @@ def _batch_interp(x, xp, fps, left, right):
     return y
 
 
-def wdist(x1, f1, x2, f2, grid_num):
-    r"""Wasserstein distance between two 1D probability distributions.
+def wdist(x, fs, grid_num):
+    r"""Wasserstein distance matrix of 1D probability distributions.
 
     .. math::
 
@@ -99,35 +99,32 @@ def wdist(x1, f1, x2, f2, grid_num):
 
     Parameters
     ----------
-    x1, f1 : ndarray
-        The first empirical probability density function.
-    x2, f2 : ndarray
-        The second empirical probability density function.
+    x : (M,) ndarray
+        Coordinates of grids over which *fs* are measured.
+    fs : (N, M) ndarray
+        Empirical probability density functions.
     grid_num : int
         Number of sample points in [0, 1] to approximate the integral.
 
     Returns
     -------
-    scalar
-        Wasserstein distance.
+    (N, N)
+        Wasserstein distance matrix.
 
     Examples
     --------
-    >>> import numpy as np
     >>> from heavyedge import get_sample_path, ProfileData
+    >>> from heavyedge_distance.api import scale_area
     >>> from heavyedge_distance.wasserstein import wdist
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     x = data.x()
-    ...     (Y1, Y2), (L1, L2), _ = data[:2]
-    >>> x1, Y1 = x[:L1], Y1[:L1]
-    >>> x2, Y2 = x[:L2], Y2[:L2]
-    >>> f1, f2 = Y1 / np.trapezoid(Y1, x1), Y2 / np.trapezoid(Y2, x2)
-    >>> d = wdist(x1, f1, x2, f2, 100)
+    ...     Ys, _, _ = data[:]
+    ...     fs = scale_area(x, Ys)
+    >>> d = wdist(x, fs, 100)
     """
     grid = np.linspace(0, 1, grid_num)
-    Q1 = quantile(x1, f1.reshape(1, -1), grid)[0]
-    Q2 = quantile(x2, f2.reshape(1, -1), grid)[0]
-    return np.trapezoid((Q1 - Q2) ** 2, grid) ** 0.5
+    Qs = quantile(x, fs, grid)
+    return _wdist(grid, Qs)
 
 
 def wmean(xs, fs, grid_num):
