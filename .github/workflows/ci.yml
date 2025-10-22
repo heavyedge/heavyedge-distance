@@ -51,6 +51,15 @@ jobs:
       - name: get repo
         uses: actions/checkout@v3
 
+      - name: Install OpenMP on macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install libomp
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I/usr/local/opt/libomp/include" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/local/opt/libomp/lib -Wl,-rpath,/usr/local/opt/libomp/lib" >> $GITHUB_ENV
+
       - name: set up Python
         uses: actions/setup-python@v4
         with:
