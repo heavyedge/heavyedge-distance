@@ -60,6 +60,10 @@ class EuclideanDistCommand(Command):
         np.save(out, D)
         self.logger.info(f"Saved {out}.")
 
+        file1.close()
+        if file2 is not None:
+            file2.close()
+
 
 @register_command("dist-wasserstein", "Wasserstein distance matrix")
 class WassersteinDistCommand(Command):
@@ -119,6 +123,10 @@ class WassersteinDistCommand(Command):
         D = distmat_wasserstein(t, file1, file2, args.batch_size, logger)
         np.save(out, D)
         self.logger.info(f"Saved {out}.")
+
+        file1.close()
+        if file2 is not None:
+            file2.close()
 
 
 @register_command("dist-frechet", "Fréchet distance matrix")
@@ -181,3 +189,7 @@ class FretchetDistCommand(Command):
         D = distmat_frechet(file1, file2, args.batch_size, args.n_jobs, logger)
         np.save(out, D)
         self.logger.info(f"Saved {out}.")
+
+        file1.close()
+        if file2 is not None:
+            file2.close()

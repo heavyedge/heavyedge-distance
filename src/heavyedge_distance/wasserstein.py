@@ -10,6 +10,7 @@ Wasserstein-related functions.
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 
+# TODO: import _quantile and _optimize_q from heavyedge._wsserstein
 from ._wasserstein import _optimize_q, _quantile, _wdist_other, _wdist_self
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
 ]
 
 
+# TODO: import this function from heavyedge.wasserstein
 def quantile(x, fs, Ls, t):
     """Convert probability distributions to quantile functions.
 
