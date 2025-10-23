@@ -23,7 +23,22 @@ jobs:
       - name: Configure macOS
         if: runner.os == 'macOS'
         run: |
-          brew install libomp
+          # Get macOS version
+          OS_VERSION=$(sw_vers -productVersion)
+          echo "macOS version: $OS_VERSION"
+          
+          # Remove existing libomp if any
+          brew uninstall --ignore-dependencies libomp || true
+          
+          # Install specific version based on OS
+          if [[ "$OS_VERSION" == 11.* ]]; then
+            brew install --formula https://raw.githubusercontent.com/Homebrew/homebrew-core/8bdcd1f4533bde1bbcd0c6c6bd40c4ee26845c89/Formula/libomp.rb
+          elif [[ "$OS_VERSION" == 12.* ]]; then
+            brew install --formula https://raw.githubusercontent.com/Homebrew/homebrew-core/7e14972f6d52e5e5578da70c0015ddf401c00d9e/Formula/libomp.rb
+          else
+            brew install libomp
+          fi
+          
           brew install llvm
           echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix llvm)/bin/clang++" >> $GITHUB_ENV
