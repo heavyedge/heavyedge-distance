@@ -97,9 +97,9 @@ cpdef cnp.ndarray[cnp.float64_t, ndim=2] _dfd_1d_distmat_self(double[:, :] Ys, c
             D[i, j] = dist
             D[j, i] = dist
     else:
-        # Avoid parallization overhead if single thread is used.
+        # Loop without parallelization
         for i in range(N):
-            for j in range(i, N):
+            for j in range(i + 1, N):
                 dist = _dfd_1d(Ys[i, :Ls[i]], Ys[j, :Ls[j]])
                 D[i, j] = dist
                 D[j, i] = dist
