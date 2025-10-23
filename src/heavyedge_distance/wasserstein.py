@@ -5,6 +5,8 @@ Wasserstein distance
 Wasserstein-related functions.
 """
 
+# NOTE: Wasserstein computation is very fast so parallelization is not necessary.
+
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 
