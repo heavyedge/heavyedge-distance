@@ -18,14 +18,15 @@ jobs:
       CIBW_ARCHS_MACOS: "x86_64 arm64"
       CIBW_ENVIRONMENT_MACOS: >-
         MACOSX_DEPLOYMENT_TARGET=11.0
-        CC=$(brew --prefix llvm)/bin/clang
-        CXX=$(brew --prefix llvm)/bin/clang++
-        CFLAGS='-Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -I/usr/local/include -I$(brew --prefix libomp)/include'
-        CXXFLAGS='-Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -I/usr/local/include -I$(brew --prefix libomp)/include'
-        LDFLAGS='-L/usr/local/lib -L$(brew --prefix libomp)/lib'
+        CC='$(brew --prefix llvm)/bin/clang'
+        CXX='$(brew --prefix llvm)/bin/clang++'
+        CFLAGS='-Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp'
+        CXXFLAGS='-Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp'
+        LDFLAGS='-L$(brew --prefix libomp)/lib -lomp'
       CIBW_BEFORE_BUILD_MACOS: >
         brew install libomp &&
-        brew install llvm
+        brew install llvm &&
+        export PATH="$(brew --prefix llvm)/bin:$PATH"
       CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
         export DYLD_LIBRARY_PATH="$(brew --prefix libomp)/lib:$(brew --prefix)/lib" &&
         delocate-listdeps {wheel} &&
