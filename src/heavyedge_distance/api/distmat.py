@@ -6,6 +6,7 @@ from heavyedge_distance.dfd import dfd
 from heavyedge_distance.wasserstein import quantile, wdist
 
 __all__ = [
+    "distmat_euclidean",
     "distmat_wasserstein",
     "distmat_frechet",
 ]
@@ -97,6 +98,59 @@ def _distmat(
                     ] = dist.T
                     logger(f"{i * num_batches + j + 1}/{num_batches ** 2}")
     return D
+
+
+def _euclidean_converter(x, fs, Ls):
+    return (x, fs)
+
+
+def _euclidean_distfunc(val1, val2, n_jobs):
+    x, fs1 = val1
+    if val2 is None:
+        fs2 = fs1
+    else:
+        _, fs2 = val2
+    # TODO: implement more efficient algorithm for fs2==fs1
+    diff = fs1[:, np.newaxis, :] - fs2[np.newaxis, :, :]
+    D = np.sqrt(np.trapezoid(diff**2, x, axis=2))
+    return D
+
+
+def distmat_euclidean(f1, f2=None, batch_size=None, logger=None):
+    """L2 distance matrix between profiles.
+
+    Parameters
+    ----------
+    f1 : heavyedge.ProfileData
+        Open h5 file.
+    f2 : heavyedge.ProfileData, optional
+        Open h5 file.
+        If not passed, it is set to *f1*.
+    batch_size : int, optional
+        Batch size to load data.
+        If not passed, all data are loaded at once.
+    logger : callable, optional
+        Logger function which accepts a progress message string.
+
+    Returns
+    -------
+    (N1, N2) array
+        Euclidean distance matrix.
+
+    Notes
+    -----
+    ``distmat_euclidean(f1)`` is faster than ``distmat_euclidean(f1, f1)``.
+
+    Examples
+    --------
+    >>> from heavyedge import get_sample_path, ProfileData
+    >>> from heavyedge_distance.api import distmat_euclidean
+    >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
+    ...     D1 = distmat_euclidean(data)
+    """
+    converter = _euclidean_converter
+    distfunc = _euclidean_distfunc
+    return _distmat(converter, distfunc, f1, f2, batch_size, logger)
 
 
 def _wasserstein_converter(t):
