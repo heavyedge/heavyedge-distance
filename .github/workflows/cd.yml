@@ -17,13 +17,13 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: get repo
+        uses: actions/checkout@v3
 
       - name: Configure macOS
         if: runner.os == 'macOS'
         run: |
-          brew install libomp@16
-          brew link --force --overwrite libomp@16
+          brew install libomp
           brew install llvm
           echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix llvm)/bin/clang++" >> $GITHUB_ENV
