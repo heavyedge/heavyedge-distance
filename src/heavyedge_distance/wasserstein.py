@@ -56,7 +56,7 @@ def quantile(x, fs, Ls, t):
     return _quantile(x, Gs, Ls.astype(np.int32), t)
 
 
-def wdist(grid, Qs1, Qs2):
+def wdist(t, Qs1, Qs2):
     r"""Wasserstein distance matrix of 1D probability distributions.
 
     .. math::
@@ -67,8 +67,9 @@ def wdist(grid, Qs1, Qs2):
 
     Parameters
     ----------
-    grid : (M,) ndarray
-        Coordinates of grids over which *fs* are measured.
+    t : (M,) ndarray
+        Points over which *Qs1* and *Qs2* are measured.
+        Must be strictly increasing from 0 to 1.
     Qs1 : (N1, M) ndarray
         Quantile functions of first set of probability distributions.
     Qs2 : (N2, M) ndarray or Non
@@ -90,15 +91,15 @@ def wdist(grid, Qs1, Qs2):
     ...     x = data.x()
     ...     Ys, Ls, _ = data[:]
     ...     fs = scale_area(x, Ys)
-    >>> grid = np.linspace(0, 1, 100)
-    >>> Qs = quantile(x, fs, Ls, grid)
-    >>> D1 = wdist(grid, Qs, None)
-    >>> D2 = wdist(grid, Qs, Qs)
+    >>> t = np.linspace(0, 1, 100)
+    >>> Qs = quantile(x, fs, Ls, t)
+    >>> D1 = wdist(t, Qs, None)
+    >>> D2 = wdist(t, Qs, Qs)
     """
     if Qs2 is None:
-        return _wdist_self(grid, Qs1)
+        return _wdist_self(t, Qs1)
     else:
-        return _wdist_other(grid, Qs1, Qs2)
+        return _wdist_other(t, Qs1, Qs2)
 
 
 def wmean(x, fs, Ls, grid_num):

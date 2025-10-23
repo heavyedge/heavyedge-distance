@@ -3,10 +3,112 @@ import os
 import numpy as np
 
 from heavyedge_distance.dfd import dfd
+from heavyedge_distance.wasserstein import quantile, wdist
 
 __all__ = [
+    "distmat_wasserstein",
     "distmat_frechet",
 ]
+
+
+def distmat_wasserstein(t, f1, f2=None, batch_size=None, logger=None):
+    """Wasserstein distance matrix between area-scaled profiles.
+
+    Parameters
+    ----------
+    t : (M,) ndarray
+        Coordinates of grids over which the quantile functions will be measured.
+        Must be strictly increasing from 0 to 1.
+    f1 : heavyedge.ProfileData
+        Open h5 file of area-scaled profiles.
+    f2 : heavyedge.ProfileData, optional
+        Open h5 file of area-scaled profiles.
+        If not passed, it is set to *f1*.
+    batch_size : int, optional
+        Batch size to load data.
+        If not passed, all data are loaded at once.
+    logger : callable, optional
+        Logger function which accepts a progress message string.
+
+    Returns
+    -------
+    (N1, N2) array
+        Wasserstein distance matrix.
+
+    Notes
+    -----
+    ``distmat_wasserstein(f1)`` is faster than ``distmat_wasserstein(f1, f1)``.
+    """
+    if logger is None:
+        # dummy logger
+        def logger(msg):
+            pass
+
+    if f2 is not None:
+        # distmat between f1 and f2
+        if batch_size is None:
+            fs1, Ls1, _ = f1[:]
+            Qs1 = quantile(f1.x(), fs1, Ls1, t)
+            fs2, Ls2, _ = f2[:]
+            Qs2 = quantile(f2.x(), fs2, Ls2, t)
+            D = wdist(t, Qs1, Qs2)
+            logger("1/1")
+        else:
+            N1, N2 = len(f1), len(f2) if f2 is not None else len(f1)
+            num_batches_1 = (N1 // batch_size) + int(bool(N1 % batch_size))
+            num_batches_2 = (N2 // batch_size) + int(bool(N2 % batch_size))
+
+            D = np.empty((N1, N2), dtype=np.float64)
+
+            for i in range(num_batches_1):
+                fs1, Ls1, _ = f1[i * batch_size : (i + 1) * batch_size]
+                Qs1 = quantile(f1.x(), fs1, Ls1, t)
+                for j in range(num_batches_2):
+                    fs2, Ls2, _ = f2[j * batch_size : (j + 1) * batch_size]
+                    Qs2 = quantile(f2.x(), fs2, Ls2, t)
+                    D[
+                        i * batch_size : (i + 1) * batch_size,
+                        j * batch_size : (j + 1) * batch_size,
+                    ] = wdist(t, Qs1, Qs2)
+                    logger(
+                        f"{i * num_batches_2 + j + 1}/{num_batches_1 * num_batches_2}"
+                    )
+    else:
+        # distmat of f1 to itself
+        if batch_size is None:
+            fs1, Ls1, _ = f1[:]
+            Qs1 = quantile(f1.x(), fs1, Ls1, t)
+            D = wdist(t, Qs1, None)
+            logger("1/1")
+        else:
+            N = len(f1)
+            num_batches = (N // batch_size) + int(bool(N % batch_size))
+
+            D = np.empty((N, N), dtype=np.float64)
+
+            for i in range(num_batches):
+                fs1, Ls1, _ = f1[i * batch_size : (i + 1) * batch_size]
+                Qs1 = quantile(f1.x(), fs1, Ls1, t)
+                # diagonal
+                D[
+                    i * batch_size : (i + 1) * batch_size,
+                    i * batch_size : (i + 1) * batch_size,
+                ] = wdist(t, Qs1, None)
+                # off-diagonal
+                for j in range(i + 1, num_batches):
+                    fs2, Ls2, _ = f1[j * batch_size : (j + 1) * batch_size]
+                    Qs2 = quantile(f2.x(), fs2, Ls2, t)
+                    dist = wdist(t, Qs1, Qs2)
+                    D[
+                        i * batch_size : (i + 1) * batch_size,
+                        j * batch_size : (j + 1) * batch_size,
+                    ] = dist
+                    D[
+                        j * batch_size : (j + 1) * batch_size,
+                        i * batch_size : (i + 1) * batch_size,
+                    ] = dist.T
+                    logger(f"{i * num_batches + j + 1}/{num_batches ** 2}")
+    return D
 
 
 def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None, logger=None):
