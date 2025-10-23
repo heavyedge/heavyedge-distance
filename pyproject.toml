@@ -73,5 +73,8 @@ addopts = "--ignore=doc --doctest-modules --import-mode=importlib"
 # scipy skips these wheels
 skip = "cp36-* cp37-* cp38-* cp39-* pp* *_ppc64le *_i686 *_s390x"
 
+[tool.cibuildwheel.macos]
+environment = { MACOSX_DEPLOYMENT_TARGET = "15.0" }
+
 [project.entry-points."heavyedge.commands"]
 "Distance matrix" = "heavyedge_distance.plugins.distmat"
