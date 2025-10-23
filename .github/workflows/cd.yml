@@ -17,10 +17,18 @@ jobs:
       CIBW_BUILD_VERBOSITY: "1"
       CIBW_ARCHS_MACOS: "x86_64 arm64"
       CIBW_BEFORE_BUILD_MACOS: >
-        chmod +x .github/scripts/configure_macos.sh &&
-        .github/scripts/configure_macos.sh
+        brew install libomp &&
+        brew install llvm
+      CIBW_ENVIRONMENT_MACOS: >
+        MACOSX_DEPLOYMENT_TARGET=11.0
+        PATH="/usr/local/opt/llvm/bin:$PATH"
+        CC="/usr/local/opt/llvm/bin/clang"
+        CXX="/usr/local/opt/llvm/bin/clang++"
+        CFLAGS="-I/usr/local/opt/libomp/include"
+        CXXFLAGS="-I/usr/local/opt/libomp/include"
+        LDFLAGS="-L/usr/local/opt/libomp/lib -Wl,-rpath,/usr/local/opt/libomp/lib"
       CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
-        DYLD_LIBRARY_PATH=$(brew --prefix libomp)/lib:$(brew --prefix)/lib
+        DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib:/usr/local/lib
         delocate-listdeps {wheel} &&
         delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
 
