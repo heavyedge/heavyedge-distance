@@ -14,10 +14,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
-      CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0"
+      CIBW_BUILD_VERBOSITY: "1"
+      CIBW_ARCHS_MACOS: "x86_64 arm64"
+      CIBW_ENVIRONMENT_MACOS: >-
+        MACOSX_DEPLOYMENT_TARGET=11.0
+        CC=clang
+        CXX=clang++
+        CFLAGS='-Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -I/usr/local/include -I/usr/local/opt/libomp/include'
+        CXXFLAGS='-Wno-unused-result -Wsign-compare -Wunreachable-code -fno-common -dynamic -I/usr/local/include -I/usr/local/opt/libomp/include'
+        LDFLAGS='-L/usr/local/lib -L/usr/local/opt/libomp/lib'
+      CIBW_BEFORE_BUILD_MACOS: >
+        brew install libomp &&
+        brew install llvm
       CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
-        DYLD_LIBRARY_PATH=$(brew --prefix libomp)/lib delocate-listdeps {wheel} &&
-        DYLD_LIBRARY_PATH=$(brew --prefix libomp)/lib delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
+        export DYLD_LIBRARY_PATH=/usr/local/opt/libomp/lib:/usr/local/lib &&
+        delocate-listdeps {wheel} &&
+        delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}
+
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -25,18 +38,6 @@ jobs:
     steps:
       - name: get repo
         uses: actions/checkout@v3
-
-      - name: Configure macOS
-        if: runner.os == 'macOS'
-        run: |
-          brew install libomp
-          brew install llvm
-          echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
-          echo "CXX=$(brew --prefix llvm)/bin/clang++" >> $GITHUB_ENV
-          echo "CFLAGS=-I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp" >> $GITHUB_ENV
-          echo "CXXFLAGS=-I$(brew --prefix libomp)/include -Xpreprocessor -fopenmp" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$(brew --prefix libomp)/lib -lomp" >> $GITHUB_ENV
-          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.20.0
