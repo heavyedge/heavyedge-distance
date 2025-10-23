@@ -10,7 +10,7 @@ Wasserstein-related functions.
 import numpy as np
 from scipy.integrate import cumulative_trapezoid
 
-from ._wasserstein import _optimize_q, _quantile, _wdist
+from ._wasserstein import _optimize_q, _quantile, _wdist_other, _wdist_self
 
 __all__ = [
     "quantile",
@@ -56,7 +56,7 @@ def quantile(x, fs, Ls, t):
     return _quantile(x, Gs, Ls.astype(np.int32), t)
 
 
-def wdist(x, fs, Ls, grid_num):
+def wdist(grid, Qs1, Qs2):
     r"""Wasserstein distance matrix of 1D probability distributions.
 
     .. math::
@@ -67,34 +67,38 @@ def wdist(x, fs, Ls, grid_num):
 
     Parameters
     ----------
-    x : (M,) ndarray
+    grid : (M,) ndarray
         Coordinates of grids over which *fs* are measured.
-    fs : (N, M) ndarray
-        Empirical probability density functions.
-    Ls : (N,) ndarray
-        Length of supports of each *fs*.
-    grid_num : int
-        Number of sample points in [0, 1] to approximate the integral.
+    Qs1 : (N1, M) ndarray
+        Quantile functions of first set of probability distributions.
+    Qs2 : (N2, M) ndarray or Non
+        Quantile functions of second set of probability distributions.
+        If ``None`` is passed, it is set to *Qs1*.
 
     Returns
     -------
-    (N, N) array
+    (N1, N2) array
         Wasserstein distance matrix.
 
     Examples
     --------
+    >>> import numpy as np
     >>> from heavyedge import get_sample_path, ProfileData
     >>> from heavyedge_distance.api import scale_area
-    >>> from heavyedge_distance.wasserstein import wdist
+    >>> from heavyedge_distance.wasserstein import quantile, wdist
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     x = data.x()
     ...     Ys, Ls, _ = data[:]
     ...     fs = scale_area(x, Ys)
-    >>> d = wdist(x, fs, Ls, 100)
+    >>> grid = np.linspace(0, 1, 100)
+    >>> Qs = quantile(x, fs, Ls, grid)
+    >>> D1 = wdist(grid, Qs, None)
+    >>> D2 = wdist(grid, Qs, Qs)
     """
-    grid = np.linspace(0, 1, grid_num)
-    Qs = quantile(x, fs, Ls, grid)
-    return _wdist(grid, Qs)
+    if Qs2 is None:
+        return _wdist_self(grid, Qs1)
+    else:
+        return _wdist_other(grid, Qs1, Qs2)
 
 
 def wmean(x, fs, Ls, grid_num):
