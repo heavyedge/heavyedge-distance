@@ -22,7 +22,8 @@ jobs:
       - name: Configure macOS
         if: runner.os == 'macOS'
         run: |
-          brew install libomp
+          brew install libomp@16
+          brew link --force --overwrite libomp@16
           brew install llvm
           echo "CC=$(brew --prefix llvm)/bin/clang" >> $GITHUB_ENV
           echo "CXX=$(brew --prefix llvm)/bin/clang++" >> $GITHUB_ENV
