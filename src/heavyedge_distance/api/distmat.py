@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 
-def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None):
+def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None, logger=None):
     """1-D discrete Fréchet distance matrix between profiles.
 
     Parameters
@@ -26,6 +26,8 @@ def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None):
         Number of parallel workers.
         If not passed, `HEAVYEDGE_MAX_WORKERS` environment variable is used.
         If the environment variable is invalid, set to 1.
+    logger : callable, optional
+        Logger function which accepts a progress message string.
 
     Returns
     -------
@@ -42,9 +44,6 @@ def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None):
     >>> from heavyedge_distance.api import distmat_frechet
     >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
     ...     D1 = distmat_frechet(data)
-    ...     D2 = distmat_frechet(data, batch_size=10)
-    ...     D3 = distmat_frechet(data, data)
-    ...     D4 = distmat_frechet(data, data, batch_size=10)
     """
     if n_jobs is not None:
         pass
@@ -55,12 +54,18 @@ def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None):
         else:
             n_jobs = 1
 
+    if logger is None:
+        # dummy logger
+        def logger(msg):
+            pass
+
     if f2 is not None:
         # distmat between f1 and f2
         if batch_size is None:
             Ys1, Ls1, _ = f1[:]
             Ys2, Ls2, _ = f2[:]
             D = dfd((Ys1, Ls1), (Ys2, Ls2), n_jobs)
+            logger("1/1")
         else:
             N1, N2 = len(f1), len(f2) if f2 is not None else len(f1)
             num_batches_1 = (N1 // batch_size) + int(bool(N1 % batch_size))
@@ -76,11 +81,15 @@ def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None):
                         i * batch_size : (i + 1) * batch_size,
                         j * batch_size : (j + 1) * batch_size,
                     ] = dfd((Ys1, Ls1), (Ys2, Ls2), n_jobs)
+                    logger(
+                        f"{i * num_batches_2 + j + 1}/{num_batches_1 * num_batches_2}"
+                    )
     else:
         # distmat of f1 to itself
         if batch_size is None:
             Ys1, Ls1, _ = f1[:]
             D = dfd((Ys1, Ls1), None, n_jobs)
+            logger("1/1")
         else:
             N = len(f1)
             num_batches = (N // batch_size) + int(bool(N % batch_size))
@@ -106,4 +115,5 @@ def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None):
                         j * batch_size : (j + 1) * batch_size,
                         i * batch_size : (i + 1) * batch_size,
                     ] = dist.T
+                    logger(f"{i * num_batches + j + 1}/{num_batches ** 2}")
     return D
