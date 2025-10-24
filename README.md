@@ -47,3 +47,10 @@ For development features, you must install the package by `pip install -e .[dev]
 ### Testing
 
 Run `pytest` command to perform unit test.
+
+When doctest is run, buildable sample data are rebuilt by default.
+To disable this, set `HEAVYEDGE_TEST_REBUILD` environment variable to zero.
+For example,
+```
+HEAVYEDGE_TEST_REBUILD=0 pytest
+```

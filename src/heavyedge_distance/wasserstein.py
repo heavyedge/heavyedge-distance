@@ -42,14 +42,13 @@ def wdist(t, Qs1, Qs2):
     Examples
     --------
     >>> import numpy as np
-    >>> from heavyedge import get_sample_path, ProfileData
-    >>> from heavyedge.api import scale_area
+    >>> from heavyedge import ProfileData
     >>> from heavyedge.wasserstein import quantile
+    >>> from heavyedge_distance import get_sample_path
     >>> from heavyedge_distance.wasserstein import wdist
-    >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
+    >>> with ProfileData(get_sample_path("MeanProfiles-AreaScaled.h5")) as data:
     ...     x = data.x()
-    ...     _, Ls, _ = data[:]
-    ...     fs = np.concatenate([ys for ys, _, _ in scale_area(data)], axis=0)
+    ...     fs, Ls, _ = data[:]
     >>> t = np.linspace(0, 1, 100)
     >>> Qs = quantile(x, fs, Ls, t)
     >>> D1 = wdist(t, Qs, None)

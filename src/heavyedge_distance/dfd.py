@@ -38,13 +38,13 @@ def dfd(profiles1, profiles2, n_jobs):
 
     Examples
     --------
-    >>> from heavyedge import get_sample_path, ProfileData
+    >>> from heavyedge import ProfileData
+    >>> from heavyedge_distance import get_sample_path
     >>> from heavyedge_distance.dfd import dfd
-    >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
-    ...     x = data.x()
-    ...     Ys, Ls, _ = data[:3]
-    >>> d1 = dfd((Ys, Ls), None, 1)
-    >>> d2 = dfd((Ys, Ls), (Ys, Ls), 1)
+    >>> with ProfileData(get_sample_path("MeanProfiles-PlateauScaled.h5")) as data:
+    ...     Zs, Ls, _ = data[:]
+    >>> d1 = dfd((Zs, Ls), None, 1)
+    >>> d2 = dfd((Zs, Ls), (Zs, Ls), 1)
     """
     Ys1, Ls1 = profiles1
     Ls1 = Ls1.astype(np.int32)

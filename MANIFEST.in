@@ -1,0 +1,2 @@
+include src/heavyedge_distance/*.pyx
+exclude src/heavyedge_distance/*.c

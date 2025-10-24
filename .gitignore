@@ -1,3 +1,7 @@
+src/heavyedge_distance/samples/*
+!src/heavyedge_distance/samples/*.py
+!src/heavyedge_distance/samples/config*.yml
+
 # Cython
 src/**/*.c
 src/**/*.html
