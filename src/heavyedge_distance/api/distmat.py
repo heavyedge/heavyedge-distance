@@ -1,9 +1,10 @@
 import os
 
 import numpy as np
+from heavyedge.wasserstein import quantile
 
 from heavyedge_distance.dfd import dfd
-from heavyedge_distance.wasserstein import quantile, wdist
+from heavyedge_distance.wasserstein import wdist
 
 __all__ = [
     "distmat_euclidean",
@@ -13,7 +14,13 @@ __all__ = [
 
 
 def _distmat(
-    converter, distfunc, f1, f2=None, batch_size=None, n_jobs=None, logger=None
+    converter,
+    distfunc,
+    f1,
+    f2=None,
+    batch_size=None,
+    n_jobs=None,
+    logger=lambda x: None,
 ):
     if n_jobs is not None:
         pass
@@ -23,11 +30,6 @@ def _distmat(
             n_jobs = int(n_jobs)
         else:
             n_jobs = 1
-
-    if logger is None:
-        # dummy logger
-        def logger(msg):
-            pass
 
     x1 = f1.x()
     if f2 is None:
@@ -116,7 +118,7 @@ def _euclidean_distfunc(val1, val2, n_jobs):
     return D
 
 
-def distmat_euclidean(f1, f2=None, batch_size=None, logger=None):
+def distmat_euclidean(f1, f2=None, batch_size=None, logger=lambda x: None):
     """L2 distance matrix between profiles.
 
     Parameters
@@ -169,7 +171,7 @@ def _wasserstein_distfunc(t):
     return distfunc
 
 
-def distmat_wasserstein(t, f1, f2=None, batch_size=None, logger=None):
+def distmat_wasserstein(t, f1, f2=None, batch_size=None, logger=lambda x: None):
     """Wasserstein distance matrix between area-scaled profiles.
 
     Parameters
@@ -210,7 +212,7 @@ def _dfd_distfunc(val1, val2, n_jobs):
     return dfd(val1, val2, n_jobs)
 
 
-def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None, logger=None):
+def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None, logger=lambda x: None):
     """1-D discrete Fréchet distance matrix between profiles.
 
     Parameters
