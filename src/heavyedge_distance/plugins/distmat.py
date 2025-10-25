@@ -57,7 +57,7 @@ class EuclideanDistCommand(Command):
             file1,
             file2,
             args.batch_size,
-            lambda msg: self.logger.info(f"{out.path} : {msg}"),
+            lambda msg: self.logger.info(f"{out} : {msg}"),
         )
         np.save(out, D)
 
@@ -124,7 +124,7 @@ class WassersteinDistCommand(Command):
             file1,
             file2,
             args.batch_size,
-            lambda msg: self.logger.info(f"{out.path} : {msg}"),
+            lambda msg: self.logger.info(f"{out} : {msg}"),
         )
         np.save(out, D)
 
@@ -195,7 +195,7 @@ class FretchetDistCommand(Command):
             file2,
             args.batch_size,
             args.n_jobs,
-            lambda msg: self.logger.info(f"{out.path} : {msg}"),
+            lambda msg: self.logger.info(f"{out} : {msg}"),
         )
         np.save(out, D)
 
