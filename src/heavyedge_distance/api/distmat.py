@@ -175,6 +175,11 @@ def _wasserstein_distfunc(t):
 def distmat_wasserstein(t, f1, f2=None, batch_size=None, logger=lambda x: None):
     """Wasserstein distance matrix between area-scaled profiles.
 
+    .. warning::
+
+        This function assumes that the profiles in *f1* and *f2* are area-scaled and
+        heights outside the support are zero.
+
     Parameters
     ----------
     t : (M,) ndarray
