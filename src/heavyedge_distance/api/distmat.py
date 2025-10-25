@@ -145,10 +145,11 @@ def distmat_euclidean(f1, f2=None, batch_size=None, logger=lambda x: None):
 
     Examples
     --------
-    >>> from heavyedge import get_sample_path, ProfileData
+    >>> from heavyedge import ProfileData
+    >>> from heavyedge_distance import get_sample_path
     >>> from heavyedge_distance.api import distmat_euclidean
-    >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
-    ...     D1 = distmat_euclidean(data)
+    >>> with ProfileData(get_sample_path("MeanProfiles-AreaScaled.h5")) as data:
+    ...     D = distmat_euclidean(data)
     """
     converter = _euclidean_converter
     distfunc = _euclidean_distfunc
@@ -198,6 +199,15 @@ def distmat_wasserstein(t, f1, f2=None, batch_size=None, logger=lambda x: None):
     Notes
     -----
     ``distmat_wasserstein(f1)`` is faster than ``distmat_wasserstein(f1, f1)``.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from heavyedge import ProfileData
+    >>> from heavyedge_distance import get_sample_path
+    >>> from heavyedge_distance.api import distmat_wasserstein
+    >>> with ProfileData(get_sample_path("MeanProfiles-AreaScaled.h5")) as data:
+    ...     D = distmat_wasserstein(np.linspace(0, 1, 100), data)
     """
     converter = _wasserstein_converter(t)
     distfunc = _wasserstein_distfunc(t)
@@ -243,9 +253,10 @@ def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None, logger=lambda x: 
 
     Examples
     --------
-    >>> from heavyedge import get_sample_path, ProfileData
+    >>> from heavyedge import ProfileData
+    >>> from heavyedge_distance import get_sample_path
     >>> from heavyedge_distance.api import distmat_frechet
-    >>> with ProfileData(get_sample_path("Prep-Type2.h5")) as data:
+    >>> with ProfileData(get_sample_path("MeanProfiles-PlateauScaled.h5")) as data:
     ...     D1 = distmat_frechet(data)
     """
     return _distmat(_dfd_converter, _dfd_distfunc, f1, f2, batch_size, n_jobs, logger)
