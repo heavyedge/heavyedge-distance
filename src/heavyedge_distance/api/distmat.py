@@ -257,6 +257,6 @@ def distmat_frechet(f1, f2=None, batch_size=None, n_jobs=None, logger=lambda x: 
     >>> from heavyedge_distance import get_sample_path
     >>> from heavyedge_distance.api import distmat_frechet
     >>> with ProfileData(get_sample_path("MeanProfiles-PlateauScaled.h5")) as data:
-    ...     D1 = distmat_frechet(data)
+    ...     D = distmat_frechet(data)
     """
     return _distmat(_dfd_converter, _dfd_distfunc, f1, f2, batch_size, n_jobs, logger)
