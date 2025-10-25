@@ -51,18 +51,20 @@ class EuclideanDistCommand(Command):
             file2 = None
         out = args.output.expanduser()
 
-        self.logger.info(f"Computing Euclidean distance matrix: {out}")
+        self.logger.info(f"Writing {out}")
 
-        def logger(msg):
-            self.logger.info(f"{out} : {msg}")
-
-        D = distmat_euclidean(file1, file2, args.batch_size, logger)
+        D = distmat_euclidean(
+            file1,
+            file2,
+            args.batch_size,
+            lambda msg: self.logger.info(f"{out.path} : {msg}"),
+        )
         np.save(out, D)
-        self.logger.info(f"Saved {out}.")
 
         file1.close()
         if file2 is not None:
             file2.close()
+        self.logger.info(f"Saved {out}.")
 
 
 @register_command("dist-wasserstein", "Wasserstein distance matrix")
@@ -114,19 +116,22 @@ class WassersteinDistCommand(Command):
             file2 = None
         out = args.output.expanduser()
 
-        self.logger.info(f"Computing Wasserstein distance matrix: {out}")
-
-        def logger(msg):
-            self.logger.info(f"{out} : {msg}")
+        self.logger.info(f"Writing {out}")
 
         t = np.linspace(0, 1, args.grid_num)
-        D = distmat_wasserstein(t, file1, file2, args.batch_size, logger)
+        D = distmat_wasserstein(
+            t,
+            file1,
+            file2,
+            args.batch_size,
+            lambda msg: self.logger.info(f"{out.path} : {msg}"),
+        )
         np.save(out, D)
-        self.logger.info(f"Saved {out}.")
 
         file1.close()
         if file2 is not None:
             file2.close()
+        self.logger.info(f"Saved {out}.")
 
 
 @register_command("dist-frechet", "Fréchet distance matrix")
@@ -181,15 +186,20 @@ class FretchetDistCommand(Command):
             file2 = None
         out = args.output.expanduser()
 
+        self.logger.info(f"Writing {out}")
+
         self.logger.info(f"Computing Fréchet distance matrix: {out}")
 
-        def logger(msg):
-            self.logger.info(f"{out} : {msg}")
-
-        D = distmat_frechet(file1, file2, args.batch_size, args.n_jobs, logger)
+        D = distmat_frechet(
+            file1,
+            file2,
+            args.batch_size,
+            args.n_jobs,
+            lambda msg: self.logger.info(f"{out.path} : {msg}"),
+        )
         np.save(out, D)
-        self.logger.info(f"Saved {out}.")
 
         file1.close()
         if file2 is not None:
             file2.close()
+        self.logger.info(f"Saved {out}.")
